@@ -8,6 +8,7 @@ const pad = require('pad-left');
 const series = require('es6-promise-series');
 const tildify = require('tildify');
 const ora = require('ora');
+const chalk = require('chalk');
 
 // Factor I determined to make interesting results
 // Can be overwritten with absolute value on the command line
@@ -24,13 +25,15 @@ module.exports = function (options) {
     }
 
     if (!fs.existsSync(startPath)) {
-        console.log(startPath, ': No such directory');
+        console.log(chalk.bold.red('\n', startPath, ': No such directory\n'));
         process.exit(1);
     }
 
     startPath = path.join(startPath, '/');
 
-    const spinner = ora(`Getting recursive size of ${startPath} `);
+    const iniPath = chalk.green.bold(startPath);
+
+    const spinner = ora(chalk.blue.bold(`Getting recursive size of ${iniPath} `));
 
     const userInterestingSizeBytes = parseInt(userInterestingSizeMB, 10);
 
@@ -40,28 +43,32 @@ module.exports = function (options) {
     let interestingSize = 0;
     let indentSize = 0;
 
+    const dirShow = chalk.gray.bold('├──');
+    const forEverything = chalk.black.bold('└──');
+
     function outputStart(startSizeString, startPath, interestingSize) {
         spinner.stop();
 
         const fullPath = tildify(path.resolve(startPath));
 
-        console.log(`${startSizeString} ${fullPath}`);
+        console.log(chalk.blue.bold(`${startSizeString} ${fullPath}`));
 
         if (startPathSize > interestingSize) {
-            console.log(`Directories larger than ${toMB(interestingSize)}`);
+            console.log(chalk.red.bold(`Directories larger than ${toMB(interestingSize)}`));
         }
     }
 
     function outputAlreadySmall() {
         spinner.stop();
 
-        console.log('Smaller than 1 MB, nice work!');
+        console.log(chalk.green.bold('\n Smaller than 1 MB, nice work!\n'));
     }
 
     function outputLargeDirectory(pathname, size) {
         spinner.stop();
-
-        console.log(`├── ${pad(toMB(size), indentSize, ' ')} ${percentage(size / startPathSize)} ${path.join(path.sep, pathname.replace(startPath, ''))}`);
+        const filePerc = chalk.cyan(percentage(size / startPathSize));
+        const fileSize = chalk.cyan(pad(toMB(size), indentSize, ' '));
+        console.log(chalk.green(`${dirShow} ${fileSize} ${filePerc} ${path.join(path.sep, pathname.replace(startPath, ''))}`));
     }
 
     function outputRemainingSpace(sizeDisplayed) {
@@ -69,7 +76,7 @@ module.exports = function (options) {
 
         const remainingSpace = startPathSize - sizeDisplayed;
         if (Math.round(remainingSpace) !== 0) {
-            console.log(`└── ${pad(toMB(remainingSpace), indentSize, ' ')} ${percentage((startPathSize - sizeDisplayed) / startPathSize)} (everything else)`);
+            console.log(chalk.red(`${forEverything} ${pad(toMB(remainingSpace), indentSize, ' ')} ${percentage((startPathSize - sizeDisplayed) / startPathSize)} (everything else)`));
         }
     }
 
@@ -77,13 +84,15 @@ module.exports = function (options) {
         spinner.stop();
 
         if (Math.round(startPathSize) > 0) {
-            console.log(`    ${pad(startSizeString, indentSize, ' ')} Total`);
+            const sumSize = chalk.blue.bold(startSizeString);
+            console.log(chalk.blue.bold((`    ${pad(sumSize, indentSize, ' ')} TOTAL`)));
         }
     }
 
     function checkPath(parentPath, depth) {
+        const getPath = chalk.green.bold(parentPath);
         spinner.start();
-        spinner.text = `Checking ${parentPath}`;
+        spinner.text = chalk.blue.bold(`Checking ${getPath}`);
         return du(parentPath).then(dirSizes => {
             if (options.isDebugMode) {
                 console.log(parentPath, depth);
