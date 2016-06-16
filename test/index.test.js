@@ -13,5 +13,5 @@ test('--help', async function(t) {
 
 test('min size', async function(t) {
     const output = await spawn('node', ['cli.js', '1000', 'test/fixtures'], {cwd: '..'});
-    t.same(output.stdout, 'Smaller than 1 MB, nice work!');
+    t.same(output.stdout, '\n Smaller than 1 MB, nice work!\n');
 });
